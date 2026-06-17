@@ -7,6 +7,8 @@
     "start": "electron .",
     "dist": "electron-builder --mac --arm64",
     "verify": "bash scripts/verify-setup.sh",
+    "verify:full": "bash scripts/verify-setup.sh --full",
+    "setup:parity": "bash scripts/setup-grok-parity.sh",
     "test:desktop": "node scripts/test-desktop-control.js"
   },
   "keywords": [

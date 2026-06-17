@@ -1,0 +1,11 @@
+{
+  "name": "executive-suite-desktop-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server exposing Grok Executive Suite macOS desktop control tools",
+  "main": "server.mjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}

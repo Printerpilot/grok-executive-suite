@@ -53,6 +53,7 @@ Grok Executive Suite wraps Grok Build's full agentic power — projects, resumab
 - **Working folders** — directories injected into every Grok prompt
 - **Connectors** — tools/MCPs used in each session (auto-tracked)
 - **Act without asking** — toggles `--always-approve` for full autonomy
+- **Desktop control** — mouse, keyboard, and app focus via bundled MCP server
 - **Desktop capture** — screenshot attach via menu or drag-and-drop
 - **Message queue** — type while Grok runs; sends when done
 - **Spellcheck** — native macOS spelling suggestions in the prompt
@@ -116,6 +117,49 @@ macOS may block the first open because the build is not notarized:
 
 If Grok Build is missing, an orange banner at the top explains how to install it.
 
+### 5. Enable full feature parity (desktop control + autonomy)
+
+Grok Executive Suite delegates to **Grok Build** for agent work. Most capabilities are built into Grok Build (shell, filesystem, web search, subagents, skills). Desktop mouse/keyboard control requires a one-time setup.
+
+**Quick setup (recommended):**
+
+```bash
+# From a repo clone (or after cloning for setup only):
+git clone https://github.com/Printerpilot/grok-executive-suite.git
+cd grok-executive-suite
+npm run setup:parity
+npm run verify:full
+```
+
+Or without cloning:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Printerpilot/grok-executive-suite/main/scripts/setup-grok-parity.sh | bash
+```
+
+**What `setup:parity` installs:**
+
+| Component | Purpose |
+|-----------|---------|
+| `executive-suite-desktop` MCP | Mouse, keyboard, app open/focus tools for Grok Build |
+| Recommended `~/.grok/config.toml` | `permission_mode = "always-approve"` for CLI parity |
+| MCP server at `~/.grok-cowork/mcp/` | Stable path for DMG-only users |
+
+**macOS permissions** (System Settings → Privacy & Security):
+
+| Permission | Needed for |
+|------------|------------|
+| **Accessibility** | Grok Executive Suite + Terminal (desktop mouse/keyboard) |
+| **Screen Recording** | Desktop screenshot capture (menu → Capture Desktop) |
+
+**In the app:** toggle **Act without asking** ON — passes `--always-approve` to Grok on every task.
+
+**Built-in (no extra install):** Shell, filesystem read/write, web search, `update_goal`, subagents, skills — these come with Grok Build + your subscription.
+
+**Optional MCP servers:** Add your own via `grok mcp add` (GitHub, databases, etc.). The app auto-tracks connectors used per task.
+
+**Developers:** this repo also ships `.grok/config.toml` (project-scoped MCP) so `grok` run with `--cwd` pointing here loads desktop control automatically.
+
 ## Data & persistence
 
 All state lives locally at:
@@ -140,6 +184,8 @@ git clone https://github.com/Printerpilot/grok-executive-suite.git
 cd grok-executive-suite
 npm install
 npm run verify    # checks Grok CLI + Apple Silicon
+npm run setup:parity  # register desktop MCP + recommended Grok config
+npm run verify:full   # verify + MCP + desktop control smoke test
 npm start         # development
 npm run dist      # produces dist/Grok Executive Suite-<version>-arm64.dmg
 ```
@@ -173,6 +219,9 @@ Grok is invoked as:
 | Orange "Grok Build CLI not found" banner | Run `curl -fsSL https://x.ai/cli/install.sh \| bash` |
 | App won't open | Right-click → Open, or allow in Privacy & Security |
 | Grok fails immediately | Ensure you're signed in; run `~/.grok/bin/grok` in Terminal |
+| Desktop control not working | Run `npm run setup:parity`; grant **Accessibility** to the app and Terminal |
+| Desktop capture fails | Grant **Screen Recording** to Grok Executive Suite |
+| MCP not listed | Run `~/.grok/bin/grok mcp list`; re-run `npm run setup:parity` |
 | Scheduled task shows in main chat | Update to v0.3.0+ — runs are isolated to task details |
 | Spellcheck not working | Restart app; requires macOS spellchecker enabled |
 

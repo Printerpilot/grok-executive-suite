@@ -1,0 +1,10 @@
+# Optional ~/.grok/config.toml settings for Grok Executive Suite parity.
+# The setup script applies permission_mode automatically — no manual merge needed.
+#
+# If configuring by hand, ensure your ~/.grok/config.toml includes:
+#
+#   [ui]
+#   permission_mode = "always-approve"
+#
+# This matches the app's "Act without asking" toggle (--always-approve per task).
+# Built-in Grok Build tools (shell, filesystem, web search) require no extra config.

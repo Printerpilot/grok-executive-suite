@@ -23,7 +23,7 @@ Without the Grok Build CLI and an active subscription, the app will launch but *
 
 - Release builds are **unsigned** (not notarized by Apple). macOS may block first launch; use **right-click → Open** or allow in **System Settings → Privacy & Security**.
 - You use this software **at your own risk**. The authors make no warranties about fitness for any purpose.
-- The app can invoke Grok with full terminal, filesystem, and (when enabled) desktop-control capabilities. Review prompts and use **Act without asking** responsibly.
+- The app can invoke Grok with full terminal, filesystem, and (when enabled) desktop-control capabilities. Run `npm run setup:parity` once to register the bundled desktop-control MCP. Review prompts and use **Act without asking** responsibly.
 
 ## Data & privacy
 

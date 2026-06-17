@@ -294,6 +294,14 @@ Autonomy mode:
 ${act}
 
 Use all available capabilities (subagents for parallel work, plan mode for ambiguous tasks, skills, full terminal + file system access, web search, MCP connectors if enabled).
+
+Desktop control (macOS):
+- MCP tools from executive-suite-desktop when configured: get_cursor_position, move_cursor, click, type_text, press_key, open_app, focus_app.
+- While this app is running, queue batched actions by writing ~/.grok-cowork/desktop-queue.json (processed automatically).
+- Desktop screenshot attach: user can Capture Desktop from the app menu or drag-and-drop images into chat.
+
+Setup for parity: users run scripts/setup-grok-parity.sh once to register the desktop MCP and recommended Grok config.
+
 Be proactive: call update_goal to create and check off progress steps as you work. Log folders you read/write via session working folders. Note connectors/tools you use (Shell, WebSearch, desktop control, MCPs).
 When you edit files in the working folders, note them for the Artifacts list.${contextBlock}`;
 }

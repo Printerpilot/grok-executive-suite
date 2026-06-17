@@ -1,0 +1,10 @@
+# Project-scoped Grok Build config for Grok Executive Suite.
+# Loaded when Grok runs with --cwd set to this repo.
+# DMG-only users: run npm run setup:parity to register user-scoped MCP instead.
+
+[mcp_servers.executive-suite-desktop]
+command = "bash"
+args = ["mcp/executive-suite-desktop/run.sh"]
+enabled = true
+startup_timeout_sec = 15
+tool_timeout_sec = 30
