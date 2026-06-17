@@ -12,6 +12,32 @@
 
 **Download:** [Latest release (DMG)](https://github.com/Printerpilot/grok-executive-suite/releases/latest) · **Docs:** [Install guide](#install-end-users) · **Verify:** [`verify-setup.sh`](scripts/verify-setup.sh)
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/01-full-app-fusion-task.png" alt="Full workspace — projects, tasks, chat, progress, and working folders" width="900"/>
+</p>
+
+<p align="center">
+  <em>Full workspace — delegate outcomes with per-task progress, folders, and connectors.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/02-scheduled-task-details.png" alt="Scheduled task details — cron jobs with isolated run history" width="900"/>
+</p>
+
+<p align="center">
+  <em>Scheduled tasks — recurring jobs with their own detail view and run output.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/03-sidebar-and-panels.png" alt="Sidebar and panels — projects, tasks, progress checklist, and context" width="900"/>
+</p>
+
+<p align="center">
+  <em>Sidebar &amp; panels — projects, tasks, progress checklist, and working-folder context at a glance.</em>
+</p>
+
 ## The idea
 
 Reduce everything on your computer to **executive functions**. You decide *what* needs done. Grok handles *how*.
