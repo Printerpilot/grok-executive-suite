@@ -40,6 +40,7 @@
   "build": {
     "appId": "com.grok.executive-suite",
     "productName": "Grok Executive Suite",
+    "publish": null,
     "mac": {
       "identity": null,
       "category": "public.app-category.developer-tools",
