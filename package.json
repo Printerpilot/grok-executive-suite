@@ -1,6 +1,6 @@
 {
   "name": "grok-executive-suite",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Grok Executive Suite — Native macOS desktop app for executive-level AI delegation. Full agentic Grok with scheduled tasks and project context.",
   "main": "main.js",
   "scripts": {

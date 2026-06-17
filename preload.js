@@ -56,6 +56,9 @@ contextBridge.exposeInMainWorld('grokCoworkAPI', {
   onTriggerCapture: (cb) => ipcRenderer.on('trigger-capture', () => cb()),
   onCreateProjectFromUI: (cb) => ipcRenderer.on('create-project-from-ui', (_e, rootPath) => cb(rootPath)),
 
+  // Marketing screenshot capture (Electron capturePage — no macOS screen-recording prompt)
+  notifyMarketingViewReady: () => ipcRenderer.send('marketing-view-ready'),
+
   // Platform
   platform: process.platform,
 

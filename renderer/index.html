@@ -146,7 +146,7 @@
         <div class="w-7 h-7 bg-white rounded-md flex items-center justify-center text-black font-bold text-sm flex-shrink-0">G</div>
         <div class="sidebar-brand-text">
           <div class="font-semibold text-[13px] tracking-tight leading-tight">Grok Executive Suite</div>
-          <div class="text-[9px] text-[#8e8e93] leading-tight mt-0.5">0.3.2 • Executive functions for AI</div>
+          <div class="text-[9px] text-[#8e8e93] leading-tight mt-0.5">0.3.3 • Executive functions for AI</div>
         </div>
       </div>
     </div>
@@ -959,6 +959,32 @@
     if (cmd && setup?.grokInstallCmd) cmd.textContent = setup.grokInstallCmd;
   }
 
+  async function applyMarketingView(view) {
+    if (!view) return;
+    if (view === 'scheduled') {
+      const task = (currentState.scheduledTasks || []).find(t => t.id === 'commit-digest')
+        || (currentState.scheduledTasks || [])[0];
+      if (task) showScheduledDetailsView(task.id, task.runs?.[0]?.id);
+      return;
+    }
+    showConversationView();
+    const taskTitle = (view === 'sidebar' || view === 'gui')
+      ? 'Grok GUI Development — current'
+      : 'Autodesk Fusion Tests';
+    const target = (taskManifest?.tasks || []).find(t => t.title === taskTitle);
+    if (target && grokCoworkAPI.switchConversationTask) {
+      const res = await grokCoworkAPI.switchConversationTask(target.id);
+      if (res?.ok) {
+        activeTask = res.task;
+        taskManifest = res.manifest || taskManifest;
+        renderTasks();
+        updateTaskHeader();
+        renderTaskSessionPanel();
+        await renderHistory(res.history || []);
+      }
+    }
+  }
+
   async function applyBootContext(ctx) {
     currentState = ctx.state || currentState;
     activeTask = ctx.activeTask || null;
@@ -971,6 +997,15 @@
     renderTaskSessionPanel();
     updateRunControls();
     await renderHistory(ctx.history || []);
+    await applyMarketingView(ctx.marketingView);
+    if (ctx.marketingView) {
+      document.getElementById('setup-warning-strip')?.classList.add('hidden');
+    }
+    if (ctx.marketingCapture && grokCoworkAPI.notifyMarketingViewReady) {
+      requestAnimationFrame(() => {
+        setTimeout(() => grokCoworkAPI.notifyMarketingViewReady(), 250);
+      });
+    }
   }
 
   async function refresh() {

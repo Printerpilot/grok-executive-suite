@@ -2,7 +2,7 @@
 # Open the latest Grok Executive Suite DMG for drag-to-Applications install.
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-VERSION="0.3.2"
+VERSION="0.3.3"
 DMG="$ROOT/dist/Grok Executive Suite-${VERSION}-arm64.dmg"
 
 if [[ ! -f "$DMG" ]]; then

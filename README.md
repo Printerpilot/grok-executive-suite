@@ -97,7 +97,7 @@ Sign in with your xAI account when prompted.
 ### 2. Download Grok Executive Suite
 
 1. Go to [GitHub Releases](https://github.com/Printerpilot/grok-executive-suite/releases)
-2. Download **`Grok Executive Suite-0.3.2-arm64.dmg`**
+2. Download **`Grok Executive Suite-0.3.3-arm64.dmg`**
 3. Open the DMG and drag **Grok Executive Suite.app** to **Applications**
 
 ### 3. First launch (unsigned app)

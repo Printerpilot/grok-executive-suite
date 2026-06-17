@@ -11,8 +11,12 @@ const sessionTracker = require('./lib/session-tracker');
 const GROK_BIN = path.join(os.homedir(), '.grok', 'bin', 'grok');
 const GROK_INSTALL_CMD = 'curl -fsSL https://x.ai/cli/install.sh | bash';
 
+// Ensures dev (`electron .`) appears as "Grok Executive Suite" to macOS automation.
+app.setName('Grok Executive Suite');
+
 let mainWindow;
 let activeGrokProcess = null;
+const scheduledGrokProcesses = new Map();
 let activeSessionWatcher = null;
 
 function stopSessionWatcher() {
@@ -330,19 +334,30 @@ async function runGrokWithContext(userPrompt, project, { taskId, attachments = [
   const fullPrompt = `${rules}${attachmentBlock}\n\nUser request / dispatch:\n${userPrompt}`;
 
   return new Promise((resolve, reject) => {
-    if (activeGrokProcess) {
-      try { activeGrokProcess.kill('SIGTERM'); } catch (e) {}
-      activeGrokProcess = null;
+    if (isScheduled) {
+      if (scheduledGrokProcesses.has(scheduledTaskId)) {
+        try { scheduledGrokProcesses.get(scheduledTaskId).kill('SIGTERM'); } catch (e) {}
+        scheduledGrokProcesses.delete(scheduledTaskId);
+      }
+    } else {
+      if (activeGrokProcess) {
+        try { activeGrokProcess.kill('SIGTERM'); } catch (e) {}
+        activeGrokProcess = null;
+      }
     }
 
-    try {
-      require('child_process').execSync(`find "${path.join(os.homedir(), '.grok')}" -name "*.lock" -type f -delete 2>/dev/null || true`);
-    } catch (e) {}
+    const expandedRoot = project.rootPath.startsWith('~/') ? path.join(os.homedir(), project.rootPath.slice(2)) : project.rootPath;
+
+    if (!fs.existsSync(expandedRoot)) {
+      sendGrokEvent({ type: 'error', data: `Project directory does not exist: ${expandedRoot}. Please update your project path.` }, { scheduledTaskId, runId });
+      sendGrokEvent({ type: 'end' }, { scheduledTaskId, runId });
+      return resolve();
+    }
 
     const args = [
       '-p', fullPrompt,
       '--output-format', 'streaming-json',
-      '--cwd', project.rootPath,
+      '--cwd', expandedRoot,
       '--rules', rules
     ];
 
@@ -358,11 +373,16 @@ async function runGrokWithContext(userPrompt, project, { taskId, attachments = [
     console.log('[main] Using binary:', GROK_BIN);
 
     const child = spawn(GROK_BIN, args, {
-      cwd: project.rootPath,
+      cwd: expandedRoot,
       env: { ...process.env, PATH: `${path.join(os.homedir(), '.grok', 'bin')}:${process.env.PATH || ''}` }
     });
-    activeGrokProcess = child;
-    if (!isScheduled && task) startSessionWatcher(project, task);
+
+    if (isScheduled) {
+      scheduledGrokProcesses.set(scheduledTaskId, child);
+    } else {
+      activeGrokProcess = child;
+      if (task) startSessionWatcher(project, task);
+    }
     sendGrokEvent({ type: 'start' }, { scheduledTaskId, runId });
 
     let buffer = '';
@@ -406,7 +426,11 @@ async function runGrokWithContext(userPrompt, project, { taskId, attachments = [
 
     child.on('error', (err) => {
       console.error('[main] grok spawn error:', err);
-      if (activeGrokProcess === child) activeGrokProcess = null;
+      if (isScheduled) {
+        if (scheduledGrokProcesses.get(scheduledTaskId) === child) scheduledGrokProcesses.delete(scheduledTaskId);
+      } else {
+        if (activeGrokProcess === child) activeGrokProcess = null;
+      }
       sendGrokEvent({ type: 'error', data: 'Failed to start grok: ' + (err.message || err) }, { scheduledTaskId, runId });
       sendGrokEvent({ type: 'end' }, { scheduledTaskId, runId });
       reject(err);
@@ -414,7 +438,11 @@ async function runGrokWithContext(userPrompt, project, { taskId, attachments = [
 
     child.on('close', (code) => {
       console.log('[main] grok process closed with code', code);
-      if (activeGrokProcess === child) activeGrokProcess = null;
+      if (isScheduled) {
+        if (scheduledGrokProcesses.get(scheduledTaskId) === child) scheduledGrokProcesses.delete(scheduledTaskId);
+      } else {
+        if (activeGrokProcess === child) activeGrokProcess = null;
+      }
       stopSessionWatcher();
       if (!isScheduled && task) syncTaskSession(project, task);
 
@@ -806,8 +834,28 @@ ipcMain.handle('get-boot-context', () => {
     manifest: taskStore.listTasks(DATA_DIR, proj.id),
     activeTask,
     history: activeTask ? taskStore.loadChatHistory(DATA_DIR, proj.id, activeTask.id) : [],
-    setup: getSetupStatus()
+    setup: getSetupStatus(),
+    marketingView: process.env.GROK_MARKETING_VIEW || null,
+    marketingCapture: process.env.GROK_MARKETING_CAPTURE || null
   };
+});
+
+ipcMain.on('marketing-view-ready', async () => {
+  const outPath = process.env.GROK_MARKETING_CAPTURE;
+  if (!outPath || !mainWindow) return;
+  await new Promise(r => setTimeout(r, 400));
+  try {
+    const absPath = path.isAbsolute(outPath) ? outPath : path.join(process.cwd(), outPath);
+    fs.mkdirSync(path.dirname(absPath), { recursive: true });
+    const image = await mainWindow.webContents.capturePage();
+    fs.writeFileSync(absPath, image.toPNG());
+    const size = image.getSize();
+    console.log('[marketing] captured', absPath, `${size.width}x${size.height}`);
+  } catch (e) {
+    console.error('[marketing] capture failed:', e);
+    process.exitCode = 1;
+  }
+  setImmediate(() => app.quit());
 });
 
 ipcMain.handle('set-act-without-asking', (event, value) => {
