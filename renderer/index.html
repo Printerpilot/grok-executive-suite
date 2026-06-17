@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Grok Executive Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; --grok-bg: #000000; --grok-surface: #0a0a0a; --grok-elevated: #141414; --grok-border: #1f1f1f; --grok-muted: #8e8e93; --grok-text: #f5f5f7; --grok-accent: #ffffff; --grok-orange: #ff9500; --grok-unread: #ff9500; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; background: var(--grok-bg); color: var(--grok-text); }
+  .sidebar { background: var(--grok-surface); border-right: 1px solid var(--grok-border); }
+  .chat-scroll { scrollbar-width: thin; scrollbar-color: #333 var(--grok-surface); }
+  .message { max-width: 82%; }
+  .user-msg { background: #1a1a1a; color: var(--grok-text); border: 1px solid var(--grok-border); border-bottom-right-radius: 6px; }
+  .assistant-msg { background: var(--grok-elevated); border: 1px solid var(--grok-border); border-bottom-left-radius: 6px; }
+  .thought { background: #0d0d0d; font-size: 0.8rem; color: var(--grok-muted); border: 1px solid var(--grok-border); }
+  .thought-streaming { border-color: #333; }
+  .tool-card { background: var(--grok-elevated); border: 1px solid var(--grok-border); font-size: 0.875rem; }
+
+  .grok-header { background: var(--grok-surface); border-bottom: 1px solid var(--grok-border); }
+  .section-label { font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--grok-muted); font-weight: 500; }
+  .native-titlebar { -webkit-app-region: drag; }
+  .sidebar-titlebar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-right: 10px;
+    min-height: 52px;
+    box-sizing: border-box;
+  }
+  .traffic-light-gutter {
+    width: 84px;
+    min-width: 84px;
+    flex-shrink: 0;
+  }
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    padding-left: 2px;
+  }
+  .sidebar-brand-text { min-width: 0; text-align: left; }
+  .native-titlebar button,
+  .native-titlebar #act-banner,
+  .native-titlebar #project-header { -webkit-app-region: no-drag; }
+  .select-text,
+  #chat,
+  #chat .message,
+  #chat .thought-content,
+  #chat .assistant-content,
+  #progress-list,
+  #working-folders,
+  #connectors-list,
+  #artifacts-list {
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+  }
+  button, input, .scheduled-item { cursor: default; user-select: none; -webkit-user-select: none; }
+  textarea, input[type="text"], input[type="number"] { user-select: text; -webkit-user-select: text; cursor: text; }
+  .scheduled-item, .task-item { padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
+  .scheduled-item:hover, .task-item:hover { background: var(--grok-elevated); }
+  .task-item.active, .scheduled-item.active { background: var(--grok-elevated); font-medium; border: 1px solid var(--grok-border); }
+  .task-item .task-title, .scheduled-item .sched-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--grok-orange); flex-shrink: 0; box-shadow: 0 0 6px rgba(255, 149, 0, 0.45); }
+  .sched-run-item { padding: 6px 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .sched-run-item:hover { background: var(--grok-elevated); }
+  .sched-run-item.selected { background: var(--grok-elevated); border-color: var(--grok-border); }
+  #scheduled-details-view { display: none; }
+  #scheduled-details-view.visible { display: flex; }
+  #conversation-view.hidden { display: none; }
+  .progress-item { display: grid; grid-template-columns: 1.25rem 1fr; gap: 0.5rem; align-items: start; padding: 4px 6px; border-radius: 4px; }
+  .progress-item:hover { background: #1f1f21; }
+  .folder-project { color: var(--grok-orange); opacity: 0.85; }
+  .folder-session { color: var(--grok-orange); }
+  .connector-used { color: var(--grok-orange); opacity: 0.85; }
+  .connector-used.recent { color: var(--grok-orange); opacity: 1; font-weight: 500; }
+  #task-context-menu, #scheduled-context-menu {
+    display: none; position: fixed; z-index: 2000;
+    background: var(--grok-elevated); border: 1px solid var(--grok-border); border-radius: 8px;
+    min-width: 150px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    pointer-events: auto;
+  }
+  .task-rename-input {
+    width: 100%; background: #1c1c1e; border: 1px solid #0a84ff;
+    border-radius: 4px; padding: 2px 6px; font-size: 12px; color: #f5f5f7;
+    outline: none;
+  }
+  #task-context-menu button, #scheduled-context-menu button {
+    display: block; width: 100%; text-align: left; padding: 6px 10px;
+    font-size: 12px; color: var(--grok-text); background: transparent; border: none;
+  }
+  #task-context-menu button:hover, #scheduled-context-menu button:hover { background: #222; }
+  .grok-btn-primary { background: var(--grok-accent); color: #000; font-weight: 500; }
+  .grok-btn-primary:hover { background: #e5e5e5; }
+  .grok-link { color: var(--grok-muted); }
+  .grok-link:hover { color: var(--grok-orange); }
+  .sched-meta { color: var(--grok-muted); font-size: 9px; }
+  #prompt-input.queued { border-color: #fbbf24; }
+  #queued-hint { color: var(--grok-orange); }
+  #main-chat-column { position: relative; }
+  #drop-overlay {
+    display: none; position: absolute; inset: 0; z-index: 50;
+    background: rgba(10, 132, 255, 0.12); border: 2px dashed #0a84ff;
+    pointer-events: none; align-items: center; justify-content: center;
+  }
+  #drop-overlay.visible { display: flex; }
+  #pending-attachments { display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  #pending-attachments.has-items { display: flex; }
+  .pending-thumb { position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 1px solid #3a3a3c; }
+  .pending-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .pending-thumb button { position: absolute; top: 2px; right: 2px; background: #000a; color: white; border: none; border-radius: 4px; font-size: 10px; width: 16px; height: 16px; line-height: 14px; cursor: pointer; }
+  .chat-image { max-width: 320px; border-radius: 12px; border: 1px solid #3a3a3c; }
+  #prompt-action-btn.stop-mode {
+    background: #ff453a;
+    color: white;
+    min-width: 5.5rem;
+    animation: grok-working-pulse 2s ease-in-out infinite;
+  }
+  #prompt-action-btn.stop-mode:hover { background: #ff6961; }
+  #prompt-action-btn.stop-mode:active { background: #d93d33; }
+  #prompt-action-btn.stop-mode .stop-icon {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: currentColor;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: -1px;
+  }
+  @keyframes grok-working-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(255, 69, 58, 0); }
+  }
+  #prompt-input:disabled { opacity: 0.65; cursor: not-allowed; }
+  #prompt-input.spellcheck-active { -webkit-locale: "en"; }
+</style>
+</head>
+<body class="bg-black text-[#f5f5f7] h-screen flex overflow-hidden">
+  <!-- Left Sidebar — Grok Executive Suite -->
+  <div class="w-72 sidebar flex flex-col h-full select-none overflow-hidden">
+    <div class="border-b border-[#1f1f1f] native-titlebar sidebar-titlebar flex items-center bg-[#0a0a0a]">
+      <div class="traffic-light-gutter" aria-hidden="true"></div>
+      <div class="sidebar-brand">
+        <div class="w-7 h-7 bg-white rounded-md flex items-center justify-center text-black font-bold text-sm flex-shrink-0">G</div>
+        <div class="sidebar-brand-text">
+          <div class="font-semibold text-[13px] tracking-tight leading-tight">Grok Executive Suite</div>
+          <div class="text-[9px] text-[#8e8e93] leading-tight mt-0.5">0.3.2 • Executive functions for AI</div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="flex-1 overflow-auto flex flex-col text-sm">
+      <!-- Projects (new in this general version) -->
+      <div class="px-2 pt-2">
+        <div class="section-label px-2">Projects</div>
+        <div id="projects-list" class="space-y-0.5 mb-2"></div>
+        <button id="new-project-btn" class="grok-link text-xs px-2">+ New Project</button>
+      </div>
+
+      <!-- Tasks (resumable conversation threads) -->
+      <div class="px-2 pt-1 border-t border-[#2c2c2e] mt-1">
+        <button id="new-conversation-task-btn" class="grok-link text-xs flex items-center gap-1 px-2 py-0.5">+ New task</button>
+        <div class="section-label px-2 mt-1">Tasks</div>
+        <div id="tasks-list" class="space-y-0.5 mb-2 max-h-40 overflow-auto"></div>
+      </div>
+
+      <!-- Scheduled (cron) -->
+      <div class="px-2">
+        <button id="new-scheduled-btn" class="grok-link text-xs flex items-center gap-1 px-2 py-0.5">+ New scheduled</button>
+        <div class="section-label px-2 mt-1">Scheduled</div>
+        <div id="scheduled-list" class="space-y-0.5 mb-1"></div>
+      </div>
+
+
+
+      <!-- Artifacts + Recents + Working folders (right side also has working folders) -->
+      <div class="px-2 pt-2 text-xs border-t border-[#2c2c2e] mt-1">
+        <div class="section-label px-2">Artifacts</div>
+        <div id="artifacts-list" class="px-2 text-[#a1a1a6] text-[11px] mb-1">No artifacts yet</div>
+
+        <div class="section-label px-2">Active task</div>
+        <div id="active-task-label" class="px-2 text-[#a1a1a6] text-[11px] truncate">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div id="main-chat-column" class="flex-1 flex flex-col min-w-0 border-r border-[#1f1f1f]">
+    <!-- Conversation view (default) -->
+    <div id="conversation-view" class="flex-1 flex flex-col min-h-0">
+      <div id="drop-overlay" class="text-sm text-white font-medium bg-white/5">Drop screenshots here</div>
+      <div class="grok-header h-11 flex items-center px-4 gap-3 text-sm flex-shrink-0 native-titlebar bg-[#0a0a0a]">
+        <div>
+          <div id="project-header" class="font-semibold">General Workspace</div>
+          <div id="task-header" class="text-[10px] text-[#8e8e93] truncate max-w-xs">No task selected</div>
+        </div>
+        <div id="act-banner" class="px-2 py-0.5 text-[10px] rounded-full bg-[#1a1a1a] text-[#f5f5f7] border border-[#2a2a2a] font-medium cursor-pointer">Act without asking is on</div>
+        <div class="flex-1"></div>
+        <div class="text-[#8e8e93] text-xs">Grok Build</div>
+        <button id="load-context-btn" class="text-xs px-2.5 py-1 rounded-full bg-[#141414] hover:bg-[#1f1f1f] border border-[#262626]">Load Context</button>
+      </div>
+
+      <div id="setup-warning-strip" class="hidden bg-[#2a1a00] text-[#ff9500] text-xs px-3 py-2 border-b border-[#4a3000] select-text">
+        <span class="font-medium">Grok Build CLI not found.</span>
+        <span class="text-[#c9a066] ml-1">Install in Terminal:</span>
+        <code id="setup-install-cmd" class="ml-1 text-[#ffe0b2]">curl -fsSL https://x.ai/cli/install.sh | bash</code>
+        <span class="text-[#8e8e93] ml-1">(SuperGrok or Premium+ required)</span>
+      </div>
+
+      <div id="act-info-strip" class="bg-[#0a0a0a] text-[#8e8e93] text-xs px-3 py-1 flex items-center gap-2 border-b border-[#1f1f1f] select-text">
+        <span id="act-info-primary">Act without asking is on.</span>
+        <span id="act-info-secondary" class="text-[#636366]">Grok can use tools, browse, and control your computer. Click the banner to toggle.</span>
+      </div>
+
+      <div id="chat" class="flex-1 overflow-auto p-4 chat-scroll bg-black space-y-4 select-text"></div>
+
+      <div class="p-3 border-t border-[#1f1f1f] bg-[#0a0a0a]">
+        <div id="pending-attachments"></div>
+        <div class="flex gap-2">
+          <textarea id="prompt-input" rows="2" spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences" class="flex-1 bg-[#0a0a0a] border border-[#262626] focus:border-[#444] rounded-2xl px-4 py-3 text-sm outline-none resize-none spellcheck-active" placeholder="What should we delegate? (or drop a screenshot)"></textarea>
+          <button id="prompt-action-btn" type="button" class="px-5 rounded-2xl grok-btn-primary self-end" aria-label="Send message">Send</button>
+        </div>
+        <div class="text-[10px] text-[#636366] mt-1 px-1 flex items-center gap-2 flex-wrap">
+          <span id="grok-working-hint" class="hidden text-[#ff453a] font-medium">Grok is working — type your next message; it will send when done</span>
+          <span id="queued-hint" class="hidden font-medium text-[#fbbf24]">Queued — will send when Grok finishes</span>
+          <span id="prompt-hint-default">Enter to send • Drop or paste screenshots • Spelling suggestions enabled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scheduled task details view -->
+    <div id="scheduled-details-view" class="flex-1 flex-col min-h-0">
+      <div class="grok-header h-11 flex items-center px-4 gap-3 text-sm flex-shrink-0 native-titlebar bg-[#0a0a0a]">
+        <button id="sched-back-btn" type="button" class="text-xs px-2 py-1 rounded-full bg-[#141414] hover:bg-[#1f1f1f] border border-[#262626]">← Back</button>
+        <div class="flex-1 min-w-0">
+          <div id="sched-detail-title" class="font-semibold truncate">Scheduled task</div>
+          <div id="sched-detail-meta" class="text-[10px] text-[#8e8e93] truncate"></div>
+        </div>
+        <button id="sched-run-btn" type="button" class="text-xs px-3 py-1 rounded-full grok-btn-primary">Run now</button>
+      </div>
+      <div class="flex flex-1 min-h-0">
+        <div class="w-56 border-r border-[#1f1f1f] bg-[#0a0a0a] overflow-auto p-2">
+          <div class="section-label px-1 mb-1">Run history</div>
+          <div id="sched-runs-list" class="space-y-0.5 text-xs"></div>
+        </div>
+        <div id="sched-run-output" class="flex-1 overflow-auto p-4 chat-scroll bg-black space-y-4 select-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right sidebar: Progress + Working folders + Context (matches your Claude Cowork) -->
+  <div class="w-72 bg-[#0a0a0a] border-l border-[#1f1f1f] flex flex-col text-xs overflow-auto">
+    <div class="p-3 border-b border-[#2c2c2e] font-medium">Progress</div>
+    <div id="progress-list" class="p-2 space-y-1"></div>
+
+    <div class="p-3 border-t border-[#2c2c2e] font-medium">Working folders</div>
+    <div id="working-folders" class="px-2 text-[10px] text-[#a1a1a6]"></div>
+    <button id="add-folder-btn" class="grok-link text-xs px-2 py-1">+ Add folder</button>
+
+    <div class="p-3 border-t border-[#2c2c2e] font-medium">Context / Connectors</div>
+    <div id="connectors-list" class="px-2 text-[10px] text-[#a1a1a6]"></div>
+
+    <div class="mt-auto p-2 text-[10px] text-[#636366] border-t border-[#1f1f1f]">
+      Progress, folders & connectors are per-task. Data persists under ~/.grok-cowork/
+    </div>
+  </div>
+
+  <div id="task-context-menu" role="menu">
+    <button type="button" data-action="rename">Rename…</button>
+    <button type="button" data-action="delete" class="text-red-400 hover:text-red-300">Delete</button>
+  </div>
+  <div id="scheduled-context-menu" role="menu">
+    <button type="button" data-action="rename">Rename…</button>
+    <button type="button" data-action="run">Run now</button>
+    <button type="button" data-action="delete" class="text-red-400 hover:text-red-300">Delete</button>
+  </div>
+</body>
+
+<script>
+  // Wrap everything in an IIFE to avoid any global scope redeclaration issues or pollution
+  (function() {
+    // Safe global reference to the preload-exposed API. Preload runs before this script.
+    var grokCoworkAPI = window.grokCoworkAPI || {};
+    var currentState = {};
+    var activeTask = null;
+    var taskManifest = { tasks: [], activeTaskId: null };
+    var isSending = false;
+    var isGrokRunning = false;
+    var isStopping = false;
+    var streamBuffers = { thought: '', assistant: '' };
+    var pendingAttachments = [];
+    var dragDepth = 0;
+    var queuedMessage = null;
+    var taskContextTargetId = null;
+    var scheduledContextTargetId = null;
+    var viewingScheduledId = null;
+    var selectedScheduledRunId = null;
+    var scheduledStreamBuffers = {};
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function updateTaskHeader() {
+    const header = document.getElementById('task-header');
+    const label = document.getElementById('active-task-label');
+    const title = activeTask?.title || 'No task selected';
+    if (header) header.textContent = title;
+    if (label) label.textContent = title;
+  }
+
+  function clearChat() {
+    const chat = document.getElementById('chat');
+    if (chat) chat.innerHTML = '';
+    streamBuffers = { thought: '', assistant: '' };
+  }
+
+  function formatTaskTime(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    } catch (e) { return ''; }
+  }
+
+  function formatCronLabel(cron) {
+    if (!cron) return 'Not scheduled';
+    const parts = cron.trim().split(/\s+/);
+    if (parts.length < 5) return 'Custom schedule';
+    const [min, hour, dom, month, dow] = parts;
+    if (min === '0' && hour === '*' && dom === '*' && month === '*' && dow === '*') return 'Every hour';
+    if (min === '0' && hour !== '*' && dom === '*' && month === '*' && dow === '*') {
+      const h = parseInt(hour, 10);
+      if (!Number.isNaN(h)) {
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `Daily at ${h12}:00 ${suffix}`;
+      }
+    }
+    if (min.startsWith('*/') && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+      const n = parseInt(min.slice(2), 10);
+      if (!Number.isNaN(n)) return `Every ${n} minutes`;
+    }
+    if (hour.startsWith('*/') && dom === '*' && month === '*' && dow === '*') {
+      const n = parseInt(hour.slice(2), 10);
+      if (!Number.isNaN(n)) return `Every ${n} hours`;
+    }
+    if (dom === '*' && month === '*' && dow === '1-5') return 'Weekdays';
+    if (dom === '*' && month === '*' && dow === '0,6') return 'Weekends';
+    return 'Custom schedule';
+  }
+
+  function scheduledMetaLabel(task) {
+    if ((task.runs || []).some(r => r.status === 'running')) return 'Running…';
+    if (task.lastRun) return `Last run ${formatTaskTime(task.lastRun)}`;
+    if (!task.enabled) return 'Paused';
+    return formatCronLabel(task.cron);
+  }
+
+  async function renderMessageToChat(msg) {
+    if (!msg) return;
+    if (msg.attachments?.length) {
+      await addImageMessage(msg.role || 'user', msg.content, msg.attachments, false);
+      return;
+    }
+    if (!msg.content) return;
+    if (msg.role === 'user') return addMessage('user', msg.content, false);
+    if (msg.role === 'system') return addMessage('system', msg.content, false);
+    if (msg.role === 'thought') return addMessage('thought', msg.content, false);
+    if (msg.role === 'assistant') return addMessage('assistant', msg.content, false);
+  }
+
+  async function renderHistory(messages) {
+    clearChat();
+    for (const msg of (messages || [])) {
+      await renderMessageToChat(msg);
+    }
+  }
+
+  async function persistMessages(messages) {
+    if (!messages?.length || !grokCoworkAPI.appendTaskMessages) return;
+    try {
+      const res = await grokCoworkAPI.appendTaskMessages({ messages });
+      if (res?.manifest) taskManifest = res.manifest;
+      renderTasks();
+    } catch (e) { console.warn('[renderer] persist failed', e); }
+  }
+
+  async function flushStreamBuffers() {
+    const messages = [];
+    if (streamBuffers.thought.trim()) messages.push({ role: 'thought', content: streamBuffers.thought });
+    if (streamBuffers.assistant.trim()) messages.push({ role: 'assistant', content: streamBuffers.assistant });
+    streamBuffers = { thought: '', assistant: '' };
+    if (messages.length) await persistMessages(messages);
+  }
+
+  function hideTaskContextMenu() {
+    const menu = document.getElementById('task-context-menu');
+    if (menu) menu.style.display = 'none';
+    taskContextTargetId = null;
+  }
+
+  function hideScheduledContextMenu() {
+    const menu = document.getElementById('scheduled-context-menu');
+    if (menu) menu.style.display = 'none';
+    scheduledContextTargetId = null;
+  }
+
+  function hideAllContextMenus() {
+    hideTaskContextMenu();
+    hideScheduledContextMenu();
+  }
+
+  function showScheduledContextMenu(taskId, x, y) {
+    const menu = document.getElementById('scheduled-context-menu');
+    if (!menu) return;
+    hideTaskContextMenu();
+    scheduledContextTargetId = taskId;
+    menu.style.display = 'block';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+  }
+
+  function scheduledHasUnviewed(task) {
+    return (task.runs || []).some(r => r.status !== 'running' && !r.viewed);
+  }
+
+  function getScheduledTask(id) {
+    return (currentState.scheduledTasks || []).find(t => t.id === id);
+  }
+
+  function showConversationView() {
+    viewingScheduledId = null;
+    selectedScheduledRunId = null;
+    document.getElementById('conversation-view')?.classList.remove('hidden');
+    document.getElementById('scheduled-details-view')?.classList.remove('visible');
+    renderScheduledTasks();
+  }
+
+  function showScheduledDetailsView(taskId, runId) {
+    viewingScheduledId = taskId;
+    const task = getScheduledTask(taskId);
+    if (!task) return;
+    document.getElementById('conversation-view')?.classList.add('hidden');
+    const panel = document.getElementById('scheduled-details-view');
+    if (panel) panel.classList.add('visible');
+    document.getElementById('sched-detail-title').textContent = task.name;
+    document.getElementById('sched-detail-meta').textContent = [
+      task.enabled ? formatCronLabel(task.cron) : 'Paused',
+      task.lastRun ? `Last run ${formatTaskTime(task.lastRun)}` : 'No runs yet'
+    ].join(' • ');
+    const runs = task.runs || [];
+    selectedScheduledRunId = runId || runs[0]?.id || null;
+    renderScheduledRunsList(task);
+    renderScheduledRunOutput(task, selectedScheduledRunId);
+    renderScheduledTasks();
+    if (grokCoworkAPI.markScheduledViewed) {
+      grokCoworkAPI.markScheduledViewed({ taskId, runId: selectedScheduledRunId }).then((res) => {
+        if (res?.task) {
+          const idx = (currentState.scheduledTasks || []).findIndex(t => t.id === taskId);
+          if (idx >= 0) currentState.scheduledTasks[idx] = res.task;
+          renderScheduledTasks();
+          renderScheduledRunsList(res.task);
+        }
+      });
+    }
+  }
+
+  function renderScheduledRunsList(task) {
+    const list = document.getElementById('sched-runs-list');
+    if (!list) return;
+    const runs = task.runs || [];
+    list.innerHTML = '';
+    if (!runs.length) {
+      list.innerHTML = '<div class="text-[#636366] px-1">No runs yet</div>';
+      return;
+    }
+    runs.forEach(run => {
+      const div = document.createElement('div');
+      div.className = `sched-run-item ${run.id === selectedScheduledRunId ? 'selected' : ''}`;
+      const statusLabel = run.status === 'running' ? 'Running…' : formatTaskTime(run.completedAt || run.startedAt);
+      const unviewed = run.status !== 'running' && !run.viewed;
+      div.innerHTML = `<div class="flex items-center gap-2"><span class="flex-1 truncate">${escapeHtml(statusLabel)}</span>${unviewed ? '<span class="unread-dot" title="Unviewed output"></span>' : ''}</div><div class="text-[9px] text-[#636366] capitalize">${escapeHtml(run.status || 'unknown')}</div>`;
+      div.onclick = () => {
+        selectedScheduledRunId = run.id;
+        renderScheduledRunsList(task);
+        renderScheduledRunOutput(task, run.id);
+        if (grokCoworkAPI.markScheduledViewed) {
+          grokCoworkAPI.markScheduledViewed({ taskId: task.id, runId: run.id }).then((res) => {
+            if (res?.task) {
+              const idx = (currentState.scheduledTasks || []).findIndex(t => t.id === task.id);
+              if (idx >= 0) currentState.scheduledTasks[idx] = res.task;
+              renderScheduledTasks();
+              renderScheduledRunsList(res.task);
+            }
+          });
+        }
+      };
+      list.appendChild(div);
+    });
+  }
+
+  async function renderScheduledRunOutput(task, runId) {
+    const out = document.getElementById('sched-run-output');
+    if (!out) return;
+    out.innerHTML = '';
+    const run = (task.runs || []).find(r => r.id === runId);
+    if (!run) {
+      out.innerHTML = '<div class="text-[#636366] text-sm">Select a run to view output.</div>';
+      return;
+    }
+    const liveBuf = scheduledStreamBuffers[runId];
+    const messages = [...(run.messages || [])];
+    if (liveBuf?.thought?.trim()) messages.push({ role: 'thought', content: liveBuf.thought });
+    if (liveBuf?.assistant?.trim()) messages.push({ role: 'assistant', content: liveBuf.assistant });
+    if (!messages.length) {
+      out.innerHTML = run.status === 'running'
+        ? '<div class="text-[#8e8e93] text-sm">Running… output will appear here.</div>'
+        : '<div class="text-[#636366] text-sm">No output recorded for this run.</div>';
+      return;
+    }
+    for (const msg of messages) {
+      await appendScheduledOutputMessage(out, msg);
+    }
+    out.scrollTop = out.scrollHeight;
+  }
+
+  async function appendScheduledOutputMessage(container, msg) {
+    const div = document.createElement('div');
+    const isThought = msg.role === 'thought';
+    const isUser = msg.role === 'user';
+    div.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+    const bubble = document.createElement('div');
+    if (isThought) {
+      bubble.className = 'message thought select-text px-3 py-2 rounded-xl text-xs max-w-[82%]';
+      bubble.innerHTML = '<div class="text-[10px] uppercase tracking-wide text-[#636366] mb-1">Thinking</div>';
+      const inner = document.createElement('div');
+      inner.className = 'whitespace-pre-wrap';
+      inner.textContent = msg.content;
+      bubble.appendChild(inner);
+    } else {
+      bubble.className = isUser
+        ? 'message user-msg select-text px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap'
+        : 'message assistant-msg select-text px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap';
+      bubble.textContent = msg.content;
+    }
+    div.appendChild(bubble);
+    container.appendChild(div);
+  }
+
+  function renderScheduledTasks() {
+    const sList = document.getElementById('scheduled-list');
+    if (!sList) return;
+    sList.innerHTML = '';
+    (currentState.scheduledTasks || []).forEach(task => {
+      const div = document.createElement('div');
+      div.className = `scheduled-item cursor-pointer flex items-center gap-2 ${task.id === viewingScheduledId ? 'active' : ''}`;
+      div.dataset.scheduledId = task.id;
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'sched-title flex-1';
+      titleEl.textContent = task.name;
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'sched-meta';
+      metaEl.textContent = scheduledMetaLabel(task);
+
+      const right = document.createElement('div');
+      right.className = 'flex items-center gap-1.5 flex-shrink-0';
+      if (scheduledHasUnviewed(task)) {
+        const dot = document.createElement('span');
+        dot.className = 'unread-dot';
+        dot.title = 'Unviewed output';
+        right.appendChild(dot);
+      }
+
+      const left = document.createElement('div');
+      left.className = 'flex-1 min-w-0';
+      left.appendChild(titleEl);
+      left.appendChild(metaEl);
+
+      div.appendChild(left);
+      div.appendChild(right);
+
+      div.addEventListener('click', () => showScheduledDetailsView(task.id));
+      div.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startInlineScheduledRename(task.id, titleEl);
+      });
+      div.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showScheduledContextMenu(task.id, e.clientX, e.clientY);
+      });
+
+      sList.appendChild(div);
+    });
+  }
+
+  async function saveScheduledRename(taskId, name) {
+    const clean = String(name || '').trim();
+    if (!clean || !grokCoworkAPI.renameScheduledTask) return;
+    const res = await grokCoworkAPI.renameScheduledTask({ taskId, name: clean });
+    if (res?.task) {
+      const idx = (currentState.scheduledTasks || []).findIndex(t => t.id === taskId);
+      if (idx >= 0) currentState.scheduledTasks[idx] = res.task;
+    }
+    renderScheduledTasks();
+    if (viewingScheduledId === taskId) {
+      document.getElementById('sched-detail-title').textContent = clean;
+    }
+  }
+
+  function startInlineScheduledRename(taskId, titleEl) {
+    if (!titleEl) return;
+    const task = getScheduledTask(taskId);
+    const current = task?.name || 'Scheduled task';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-rename-input';
+    input.value = current;
+    let done = false;
+    const finish = async (save) => {
+      if (done) return;
+      done = true;
+      const next = input.value.trim();
+      if (save && next && next !== current) await saveScheduledRename(taskId, next);
+      else renderScheduledTasks();
+    };
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('mousedown', (e) => e.stopPropagation());
+    input.addEventListener('blur', () => finish(true));
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  async function runScheduledTaskNow(taskId) {
+    if (isGrokActive()) return;
+    if (!grokCoworkAPI.runScheduled) return;
+    await grokCoworkAPI.runScheduled(taskId);
+    if (grokCoworkAPI.getState) currentState = await grokCoworkAPI.getState();
+    if (viewingScheduledId === taskId) {
+      const task = getScheduledTask(taskId);
+      if (task) {
+        selectedScheduledRunId = task.runs?.[0]?.id || selectedScheduledRunId;
+        showScheduledDetailsView(taskId, selectedScheduledRunId);
+      }
+    }
+    renderScheduledTasks();
+  }
+
+  function showTaskContextMenu(taskId, x, y) {
+    const menu = document.getElementById('task-context-menu');
+    if (!menu) return;
+    taskContextTargetId = taskId;
+    menu.style.display = 'block';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+  }
+
+  async function saveTaskRename(taskId, title) {
+    const clean = String(title || '').trim();
+    if (!clean) return;
+    const res = await grokCoworkAPI.renameConversationTask({ taskId, title: clean });
+    if (res?.manifest) taskManifest = res.manifest;
+    if (res?.task && activeTask?.id === taskId) activeTask = res.task;
+    renderTasks();
+    updateTaskHeader();
+  }
+
+  function startInlineTaskRename(taskId, titleEl) {
+    if (!titleEl) return;
+    const task = (taskManifest?.tasks || []).find(t => t.id === taskId);
+    const current = task?.title || 'Untitled task';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-rename-input';
+    input.value = current;
+    let done = false;
+
+    const finish = async (save) => {
+      if (done) return;
+      done = true;
+      const next = input.value.trim();
+      if (save && next && next !== current) {
+        await saveTaskRename(taskId, next);
+      } else {
+        renderTasks();
+      }
+    };
+
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('mousedown', (e) => e.stopPropagation());
+    input.addEventListener('blur', () => finish(true));
+
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  function renderTasks() {
+    const list = document.getElementById('tasks-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const tasks = taskManifest?.tasks || [];
+    if (!tasks.length) {
+      list.innerHTML = '<div class="px-2 text-[10px] text-[#6b7280]">No tasks yet</div>';
+      return;
+    }
+    tasks.forEach(task => {
+      const div = document.createElement('div');
+      div.className = `task-item cursor-pointer px-2 py-1 text-xs ${task.id === activeTask?.id ? 'active' : ''}`;
+      div.dataset.taskId = task.id;
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'task-title';
+      titleEl.textContent = task.title || 'Untitled task';
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'text-[9px] text-[#6b7280]';
+      timeEl.textContent = formatTaskTime(task.updatedAt);
+
+      div.appendChild(titleEl);
+      div.appendChild(timeEl);
+
+      div.addEventListener('click', () => resumeTask(task.id));
+      div.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startInlineTaskRename(task.id, titleEl);
+      });
+      div.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showTaskContextMenu(task.id, e.clientX, e.clientY);
+      });
+
+      list.appendChild(div);
+    });
+  }
+
+  async function refreshTaskSession() {
+    if (!activeTask?.id) return;
+    const listed = await grokCoworkAPI.listTasks?.();
+    if (listed?.activeTask) activeTask = listed.activeTask;
+    if (listed?.manifest) taskManifest = listed.manifest;
+    renderTaskSessionPanel();
+    renderTasks();
+    updateTaskHeader();
+  }
+
+  function renderTaskSessionPanel() {
+    const progList = document.getElementById('progress-list');
+    const wf = document.getElementById('working-folders');
+    const cList = document.getElementById('connectors-list');
+    const proj = currentState.projects?.find(p => p.id === currentState.activeProjectId);
+
+    const progress = activeTask?.progress || [];
+    progList.innerHTML = '';
+    if (!progress.length) {
+      progList.innerHTML = '<div class="px-2 text-[10px] text-[#6b7280]">No steps yet — Grok will add progress as work begins</div>';
+    } else {
+      progress.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'progress-item cursor-pointer';
+        div.innerHTML = `<div>${item.done ? '✅' : '○'}</div><div class="${item.done ? 'line-through text-[#6b7280]' : ''}">${escapeHtml(item.label)}</div>`;
+        div.onclick = async () => {
+          const next = progress.map((p, idx) => idx === i ? { ...p, done: !p.done } : p);
+          await grokCoworkAPI.updateTaskProgress({ items: next });
+          await refreshTaskSession();
+        };
+        progList.appendChild(div);
+      });
+    }
+
+    const projectFolders = proj?.workingFolders || [];
+    const sessionFolders = activeTask?.sessionFolders || [];
+    const allFolders = [...new Set([...projectFolders, ...sessionFolders])];
+    wf.innerHTML = '';
+    if (!allFolders.length) {
+      wf.innerHTML = '<div class="text-[#6b7280]">No folders yet</div>';
+    } else {
+      allFolders.forEach(f => {
+        const d = document.createElement('div');
+        const isSession = sessionFolders.includes(f) && !projectFolders.includes(f);
+        d.className = `cursor-pointer hover:opacity-100 truncate ${isSession ? 'folder-session' : 'folder-project'}`;
+        d.title = f + (isSession ? ' (active this task)' : ' (project)');
+        d.textContent = (isSession ? '◆ ' : '• ') + f;
+        d.onclick = async () => {
+          if (grokCoworkAPI.openPath) await grokCoworkAPI.openPath(f);
+        };
+        wf.appendChild(d);
+      });
+    }
+
+    const sessionConnectors = activeTask?.sessionConnectors || [];
+    cList.innerHTML = '';
+    if (!sessionConnectors.length) {
+      cList.innerHTML = '<div class="text-[#6b7280]">No tools logged yet for this task — run a prompt or switch back after a session</div>';
+    } else {
+      sessionConnectors.forEach(c => {
+        const name = c.name || c;
+        const recent = c.lastUsed && (Date.now() - new Date(c.lastUsed).getTime() < 5 * 60 * 1000);
+        const div = document.createElement('div');
+        div.className = `connector-used ${recent ? 'recent' : ''}`;
+        div.textContent = `• ${name}`;
+        div.title = c.lastUsed ? `Last used ${formatTaskTime(c.lastUsed)}` : '';
+        cList.appendChild(div);
+      });
+    }
+  }
+
+  async function resumeTask(taskId) {
+    if (!grokCoworkAPI.switchConversationTask) return;
+    showConversationView();
+    const res = await grokCoworkAPI.switchConversationTask(taskId);
+    if (!res?.ok) return;
+    activeTask = res.task;
+    taskManifest = res.manifest || taskManifest;
+    queuedMessage = null;
+    renderTasks();
+    updateTaskHeader();
+    renderTaskSessionPanel();
+    updateRunControls();
+    await renderHistory(res.history || []);
+  }
+
+  async function createNewConversationTask(title) {
+    showConversationView();
+    const res = await grokCoworkAPI.createConversationTask({ title: title || 'New task' });
+    activeTask = res.task;
+    taskManifest = res.manifest || taskManifest;
+    if (!res.manifest && res.task) {
+      const listed = await grokCoworkAPI.listTasks();
+      taskManifest = listed.manifest || taskManifest;
+    }
+    queuedMessage = null;
+    renderTasks();
+    updateTaskHeader();
+    clearChat();
+    pendingAttachments = [];
+    renderPendingAttachments();
+    renderArtifacts();
+    renderTaskSessionPanel();
+    updateRunControls();
+    document.getElementById('prompt-input')?.focus();
+    return res.task;
+  }
+
+  async function refreshSidebar() {
+    try {
+      if (grokCoworkAPI.getState) currentState = await grokCoworkAPI.getState();
+      const listed = await grokCoworkAPI.listTasks?.();
+      if (listed?.manifest) taskManifest = listed.manifest;
+      if (listed?.activeTask) activeTask = listed.activeTask;
+      await renderAll();
+      renderTasks();
+      updateTaskHeader();
+    } catch (e) {
+      console.warn('[renderer] refreshSidebar failed', e);
+    }
+  }
+
+  function updateActBanner() {
+    const on = !!currentState.actWithoutAsking;
+    const banner = document.getElementById('act-banner');
+    if (banner) {
+      banner.textContent = on ? 'Act without asking is on' : 'Act without asking is off';
+      banner.className = on
+        ? 'px-2 py-0.5 text-[10px] rounded-full bg-[#1a1a1a] text-[#f5f5f7] border border-[#2a2a2a] font-medium cursor-pointer'
+        : 'px-2 py-0.5 text-[10px] rounded-full bg-[#141414] text-[#8e8e93] border border-[#262626] font-medium cursor-pointer';
+    }
+    const primary = document.getElementById('act-info-primary');
+    const secondary = document.getElementById('act-info-secondary');
+    if (primary) primary.textContent = on ? 'Act without asking is on.' : 'Act without asking is off.';
+    if (secondary) {
+      secondary.textContent = on
+        ? 'Grok can use tools, browse, and control your computer. Click the banner to toggle.'
+        : 'Grok will ask before significant actions. Click the banner to enable full autonomy.';
+    }
+  }
+
+  async function renderArtifacts() {
+    const list = document.getElementById('artifacts-list');
+    if (!list || !grokCoworkAPI.listArtifacts) return;
+    try {
+      const res = await grokCoworkAPI.listArtifacts();
+      const artifacts = res?.artifacts || [];
+      if (!artifacts.length) {
+        list.innerHTML = '<div class="text-[#6b7280]">No artifacts yet</div>';
+        return;
+      }
+      list.innerHTML = '';
+      artifacts.forEach(art => {
+        const div = document.createElement('div');
+        div.className = 'cursor-pointer hover:opacity-100 truncate';
+        div.style.color = 'var(--grok-orange)';
+        div.title = art.path;
+        div.textContent = `• ${art.name}`;
+        div.onclick = async () => {
+          if (grokCoworkAPI.openPath) {
+            const opened = await grokCoworkAPI.openPath(art.path);
+            if (!opened?.ok) addMessage('system', 'Could not open artifact: ' + (opened?.error || art.path));
+          }
+        };
+        list.appendChild(div);
+      });
+    } catch (e) {
+      list.innerHTML = '<div class="text-[#6b7280]">No artifacts yet</div>';
+    }
+  }
+
+  async function createProjectFromPath(rootPath) {
+    const name = rootPath.split('/').filter(Boolean).pop() || 'New Project';
+    const res = await grokCoworkAPI.createProject({ name, rootPath });
+    if (res?.project) {
+      currentState = await grokCoworkAPI.getState();
+      currentState.activeProjectId = res.project.id;
+      activeTask = res.activeTask || null;
+      taskManifest = res.tasks || taskManifest;
+      await renderAll();
+      renderTasks();
+      updateTaskHeader();
+      clearChat();
+      pendingAttachments = [];
+      renderPendingAttachments();
+      document.getElementById('prompt-input')?.focus();
+    } else {
+      await refresh();
+    }
+  }
+
+  function updateSetupWarning(setup) {
+    const strip = document.getElementById('setup-warning-strip');
+    const cmd = document.getElementById('setup-install-cmd');
+    if (!strip) return;
+    const ok = setup?.grokInstalled !== false;
+    strip.classList.toggle('hidden', ok);
+    if (cmd && setup?.grokInstallCmd) cmd.textContent = setup.grokInstallCmd;
+  }
+
+  async function applyBootContext(ctx) {
+    currentState = ctx.state || currentState;
+    activeTask = ctx.activeTask || null;
+    taskManifest = ctx.manifest || { tasks: [], activeTaskId: null };
+    queuedMessage = null;
+    updateSetupWarning(ctx.setup);
+    await renderAll();
+    renderTasks();
+    updateTaskHeader();
+    renderTaskSessionPanel();
+    updateRunControls();
+    await renderHistory(ctx.history || []);
+  }
+
+  async function refresh() {
+    try {
+      if (grokCoworkAPI.getBootContext) {
+        await applyBootContext(await grokCoworkAPI.getBootContext());
+      } else if (grokCoworkAPI.getState) {
+        currentState = await grokCoworkAPI.getState();
+        await renderAll();
+      }
+    } catch (e) {
+      console.error('[renderer] refresh error:', e);
+      await renderAll();
+    }
+  }
+
+  async function renderAll() {
+    const proj = currentState.projects?.find(p => p.id === currentState.activeProjectId) || currentState.projects?.[0];
+    if (proj) {
+      document.getElementById('project-header').textContent = proj.name;
+    }
+
+    // Projects list
+    const pList = document.getElementById('projects-list');
+    pList.innerHTML = '';
+    (currentState.projects || []).forEach(p => {
+      const div = document.createElement('div');
+      div.className = `px-2 py-0.5 text-xs cursor-pointer ${p.id === currentState.activeProjectId ? 'bg-[#2c2c2e] font-medium' : ''}`;
+      div.textContent = p.name;
+      div.onclick = async () => {
+        const res = await grokCoworkAPI.switchProject(p.id);
+        if (res?.project) {
+          currentState.activeProjectId = p.id;
+          activeTask = res.activeTask || null;
+          taskManifest = res.tasks || taskManifest;
+          queuedMessage = null;
+          await renderAll();
+          renderTasks();
+          updateTaskHeader();
+          renderTaskSessionPanel();
+          updateRunControls();
+          await renderHistory(res.history || []);
+        } else {
+          await refresh();
+        }
+      };
+      pList.appendChild(div);
+    });
+
+    renderScheduledTasks();
+    renderTaskSessionPanel();
+
+    updateActBanner();
+    await renderArtifacts();
+  }
+
+  function renderPendingAttachments() {
+    const wrap = document.getElementById('pending-attachments');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!pendingAttachments.length) {
+      wrap.classList.remove('has-items');
+      return;
+    }
+    wrap.classList.add('has-items');
+    pendingAttachments.forEach((att, idx) => {
+      const div = document.createElement('div');
+      div.className = 'pending-thumb';
+      div.innerHTML = `<img src="${att.previewUrl || ''}" alt="attachment"><button type="button" title="Remove">×</button>`;
+      div.querySelector('button').onclick = () => {
+        pendingAttachments.splice(idx, 1);
+        renderPendingAttachments();
+      };
+      wrap.appendChild(div);
+    });
+  }
+
+  async function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageFiles(files) {
+    if (!files?.length || !grokCoworkAPI.saveAttachment) return;
+    for (const file of files) {
+      if (!file.type?.startsWith('image/')) continue;
+      const payload = { mime: file.type, name: file.name };
+      if (file.path) {
+        payload.sourcePath = file.path;
+      } else {
+        payload.base64 = await fileToBase64(file);
+      }
+      const saved = await grokCoworkAPI.saveAttachment(payload);
+      if (!saved?.ok) {
+        addMessage('system', 'Failed to save screenshot: ' + (saved?.error || 'unknown'));
+        continue;
+      }
+      const preview = await grokCoworkAPI.getAttachmentPreview(saved.path);
+      const att = { path: saved.path, mime: saved.mime, name: saved.name, previewUrl: preview?.dataUrl };
+      pendingAttachments.push(att);
+      await addImageMessage('user', '', [att], false);
+    }
+    renderPendingAttachments();
+    renderArtifacts();
+  }
+
+  async function addImageMessage(role, content, attachments, shouldPersist) {
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'message user-msg select-text px-3 py-2 rounded-2xl text-sm max-w-[82%]';
+    if (content) {
+      const p = document.createElement('div');
+      p.className = 'whitespace-pre-wrap mb-2';
+      p.textContent = content;
+      bubble.appendChild(p);
+    }
+    for (const att of attachments) {
+      let src = att.previewUrl;
+      if (!src && grokCoworkAPI.getAttachmentPreview) {
+        const preview = await grokCoworkAPI.getAttachmentPreview(att.path);
+        src = preview?.dataUrl;
+      }
+      if (src) {
+        const img = document.createElement('img');
+        img.className = 'chat-image';
+        img.src = src;
+        img.alt = att.name || 'screenshot';
+        bubble.appendChild(img);
+      }
+    }
+    div.appendChild(bubble);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    if (shouldPersist && activeTask) {
+      await persistMessages([{ role, content: content || '(screenshot attached)', attachments }]);
+    }
+  }
+
+  function isGrokActive() {
+    return isSending || isGrokRunning;
+  }
+
+  function updateRunControls() {
+    const actionBtn = document.getElementById('prompt-action-btn');
+    const input = document.getElementById('prompt-input');
+    const workingHint = document.getElementById('grok-working-hint');
+    const queuedHint = document.getElementById('queued-hint');
+    const defaultHint = document.getElementById('prompt-hint-default');
+    const running = isGrokActive();
+    const hasDraft = !!(input?.value.trim() || pendingAttachments.length);
+
+    if (actionBtn) {
+      actionBtn.disabled = isStopping;
+      if (running) {
+        if (hasDraft) {
+          actionBtn.className = 'px-5 rounded-2xl bg-[#fbbf24] text-black font-medium self-end';
+          actionBtn.textContent = 'Queue';
+          actionBtn.setAttribute('aria-label', 'Queue message');
+        } else {
+          actionBtn.className = 'px-5 rounded-2xl font-medium self-end stop-mode';
+          actionBtn.innerHTML = isStopping
+            ? 'Stopping…'
+            : '<span class="stop-icon" aria-hidden="true"></span>Stop';
+          actionBtn.setAttribute('aria-label', 'Stop Grok');
+        }
+      } else {
+        actionBtn.className = 'px-5 rounded-2xl bg-white text-black font-medium active:bg-zinc-200 self-end';
+        actionBtn.textContent = queuedMessage ? 'Send now' : 'Send';
+        actionBtn.setAttribute('aria-label', 'Send message');
+      }
+    }
+
+    if (input) {
+      input.disabled = isStopping;
+      input.classList.toggle('queued', !!queuedMessage);
+    }
+    if (workingHint) workingHint.classList.toggle('hidden', !running);
+    if (queuedHint) queuedHint.classList.toggle('hidden', !queuedMessage);
+    if (defaultHint) defaultHint.classList.toggle('hidden', running || !!queuedMessage);
+  }
+
+  function handlePromptAction() {
+    if (isGrokActive()) {
+      const input = document.getElementById('prompt-input');
+      const hasDraft = !!(input?.value.trim() || pendingAttachments.length);
+      if (hasDraft) return queueCurrentPrompt();
+      return stopGrokRun();
+    }
+    return sendPrompt();
+  }
+
+  function queueCurrentPrompt() {
+    const input = document.getElementById('prompt-input');
+    if (!input) return;
+    const text = input.value.trim();
+    const attachments = pendingAttachments.slice();
+    if (!text && !attachments.length) return;
+    queuedMessage = { text, attachments };
+    input.value = '';
+    pendingAttachments = [];
+    renderPendingAttachments();
+    updateRunControls();
+  }
+
+  async function flushQueuedMessage() {
+    if (!queuedMessage || isGrokActive()) return;
+    const input = document.getElementById('prompt-input');
+    if (input) input.value = queuedMessage.text || '';
+    pendingAttachments = queuedMessage.attachments || [];
+    queuedMessage = null;
+    renderPendingAttachments();
+    updateRunControls();
+    await sendPrompt();
+  }
+
+  async function stopGrokRun() {
+    if (!isGrokActive() || isStopping) return;
+    if (!grokCoworkAPI?.stopGrok) {
+      addMessage('system', 'Stop is not available. Restart the app.');
+      return;
+    }
+    isStopping = true;
+    updateRunControls();
+    try {
+      const res = await grokCoworkAPI.stopGrok();
+      if (!res?.ok) addMessage('system', 'Nothing to stop.');
+    } catch (e) {
+      addMessage('system', 'Stop failed: ' + (e.message || e));
+    } finally {
+      isStopping = false;
+      if (!isGrokActive()) updateRunControls();
+    }
+  }
+
+  async function sendPrompt() {
+    if (isGrokActive()) {
+      queueCurrentPrompt();
+      return;
+    }
+    try {
+      const input = document.getElementById('prompt-input');
+      if (!input) return;
+      const text = input.value.trim();
+      const attachments = pendingAttachments.slice();
+      if (!text && !attachments.length) return;
+      isSending = true;
+      updateRunControls();
+      if (attachments.length) {
+        if (text) await addImageMessage('user', text, attachments, false);
+      } else {
+        addMessage('user', text, false);
+      }
+      input.value = '';
+      pendingAttachments = [];
+      renderPendingAttachments();
+      if (!grokCoworkAPI || typeof grokCoworkAPI.runCoworkPrompt !== 'function') {
+        addMessage('system', 'Grok API not ready. Restart the app or check DevTools (Cmd+Option+I).');
+        return;
+      }
+      await grokCoworkAPI.runCoworkPrompt({
+        prompt: text,
+        attachments: attachments.map(a => ({ path: a.path, mime: a.mime, name: a.name }))
+      });
+    } catch (e) {
+      addMessage('system', 'Send error: ' + (e.message || e));
+    } finally {
+      isSending = false;
+      if (!isGrokRunning) updateRunControls();
+    }
+  }
+
+  function attachPromptKeyboard() {
+    const input = document.getElementById('prompt-input');
+    if (!input) return;
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (isGrokActive()) {
+          queueCurrentPrompt();
+          return;
+        }
+        sendPrompt();
+      }
+    });
+    input.addEventListener('input', () => updateRunControls());
+    input.addEventListener('paste', async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const imageFiles = [];
+      for (const item of items) {
+        if (item.type?.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+      if (imageFiles.length) {
+        e.preventDefault();
+        await handleImageFiles(imageFiles);
+      }
+    });
+  }
+
+  function wireDragAndDrop() {
+    const zone = document.getElementById('main-chat-column');
+    const overlay = document.getElementById('drop-overlay');
+    if (!zone) return;
+
+    const showOverlay = () => overlay?.classList.add('visible');
+    const hideOverlay = () => { dragDepth = 0; overlay?.classList.remove('visible'); };
+
+    zone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragDepth++;
+      showOverlay();
+    });
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    zone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) hideOverlay();
+    });
+    zone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      hideOverlay();
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+      if (!files.length) {
+        addMessage('system', 'Only image files (PNG, JPG, etc.) can be dropped here.');
+        return;
+      }
+      await handleImageFiles(files);
+    });
+  }
+
+  // Attach prompt action button as early as possible (DOM is parsed by script execution time)
+  (function attachPromptActionEarly() {
+    const actionBtn = document.getElementById('prompt-action-btn');
+    if (actionBtn) {
+      actionBtn.onclick = handlePromptAction;
+      console.log('[renderer] Prompt action button listener attached SYNCHRONOUSLY (early in script)');
+    } else {
+      console.error('[renderer] Prompt action button not found at script execution - scheduling load fallback');
+      window.addEventListener('load', () => {
+        const btn = document.getElementById('prompt-action-btn');
+        if (btn) {
+          btn.onclick = handlePromptAction;
+          console.log('[renderer] Prompt action button attached via load fallback');
+        }
+      });
+    }
+  })();
+
+  function addMessage(role, content, shouldPersist) {
+    if (shouldPersist === undefined) shouldPersist = role === 'system';
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    const isUser = role === 'user';
+    const isThought = role === 'thought';
+    div.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+    const bubble = document.createElement('div');
+    if (isThought) {
+      bubble.className = 'message thought select-text px-3 py-2 rounded-xl text-xs max-w-[82%]';
+      bubble.innerHTML = '<div class="text-[10px] uppercase tracking-wide text-[#6b7280] mb-1">Thinking</div>';
+      const inner = document.createElement('div');
+      inner.className = 'thought-content select-text whitespace-pre-wrap';
+      inner.textContent = content;
+      bubble.appendChild(inner);
+    } else {
+      bubble.className = isUser
+        ? 'message user-msg select-text px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap'
+        : 'message assistant-msg select-text px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap';
+      bubble.textContent = content;
+    }
+    div.appendChild(bubble);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    if (shouldPersist && activeTask) {
+      persistMessages([{ role: role === 'assistant' ? 'assistant' : role, content }]);
+    }
+  }
+
+  function markGrokRunning() {
+    if (isGrokRunning) return;
+    isGrokRunning = true;
+    isStopping = false;
+    updateRunControls();
+  }
+
+  function parseToolArgs(raw) {
+    if (!raw) return {};
+    if (typeof raw === 'object') return raw;
+    try { return JSON.parse(raw); } catch (e) { return {}; }
+  }
+
+  function dirnameFromPath(filePath) {
+    if (!filePath || typeof filePath !== 'string') return null;
+    const m = filePath.match(/^(\/[^ \n"']+)/);
+    if (!m) return null;
+    const parts = m[1].split('/');
+    parts.pop();
+    return parts.join('/') || '/';
+  }
+
+  function extractPathsFromValue(value) {
+    const paths = new Set();
+    const str = String(value || '');
+    const matches = str.matchAll(/(?:^|[\s"'=])(\/(?:Users|private|tmp|var|opt|Library)[^\s"'`,;)]+)/g);
+    for (const m of matches) {
+      const p = m[1];
+      const dir = p.includes('.') ? dirnameFromPath(p) : p;
+      if (dir && dir.length > 1) paths.add(dir);
+    }
+    return [...paths];
+  }
+
+  const TOOL_CONNECTOR_MAP = {
+    shell: 'Terminal / Shell',
+    awaitshell: 'Terminal / Shell',
+    grep: 'Filesystem',
+    read: 'Filesystem',
+    write: 'Filesystem',
+    strreplace: 'Filesystem',
+    delete: 'Filesystem',
+    glob: 'Filesystem',
+    websearch: 'Web Search',
+    webfetch: 'Web Fetch',
+    task: 'Subagent',
+    switchmode: 'Plan Mode',
+    generateimage: 'Image Generation',
+    editnotebook: 'Notebook',
+    callmcptool: 'MCP Connector',
+    listmcpresources: 'MCP Connector',
+    fetchmcpresource: 'MCP Connector'
+  };
+
+  async function trackSessionFromTool(ev) {
+    if (!activeTask?.id || !grokCoworkAPI.addTaskSessionConnector) return;
+    const toolName = String(ev.name || ev.tool || ev.tool_name || ev.function?.name || ev.type || '').toLowerCase();
+    const args = parseToolArgs(ev.arguments || ev.args || ev.input || ev.function?.arguments);
+
+    if (toolName.includes('update_goal')) {
+      await grokCoworkAPI.updateTaskProgress({ patch: args });
+      await refreshTaskSession();
+      return;
+    }
+
+    const connector = TOOL_CONNECTOR_MAP[toolName.replace(/[^a-z]/g, '')] || (toolName ? toolName : null);
+    if (connector) {
+      await grokCoworkAPI.addTaskSessionConnector({ connector });
+    }
+
+    const pathSources = [args.path, args.working_directory, args.target_directory, args.command, args.url];
+    for (const src of pathSources) {
+      for (const folder of extractPathsFromValue(src)) {
+        await grokCoworkAPI.addTaskSessionFolder({ folder });
+      }
+    }
+    await refreshTaskSession();
+  }
+
+  function handleScheduledGrokEvent(ev) {
+    const meta = ev.meta || {};
+    const taskId = meta.scheduledTaskId;
+    const runId = meta.runId;
+    if (!taskId || !runId) return;
+
+    if (!scheduledStreamBuffers[runId]) scheduledStreamBuffers[runId] = { thought: '', assistant: '' };
+    const buf = scheduledStreamBuffers[runId];
+
+    if (ev.type === 'thought') buf.thought += (ev.data || ev.text || '');
+    if (ev.type === 'text' || ev.type === 'assistant_chunk') buf.assistant += (ev.data || ev.text || '');
+
+    if (ev.type === 'end' || ev.type === 'stopped') {
+      delete scheduledStreamBuffers[runId];
+      if (grokCoworkAPI.getState) {
+        grokCoworkAPI.getState().then((st) => {
+          currentState = st;
+          renderScheduledTasks();
+          if (viewingScheduledId === taskId) {
+            const task = getScheduledTask(taskId);
+            if (task) {
+              selectedScheduledRunId = runId;
+              renderScheduledRunsList(task);
+              renderScheduledRunOutput(task, runId);
+            }
+          }
+        });
+      }
+      return;
+    }
+
+    if (viewingScheduledId === taskId && selectedScheduledRunId === runId) {
+      const task = getScheduledTask(taskId);
+      if (task) renderScheduledRunOutput(task, runId);
+    }
+  }
+
+  function handleGrokEvent(ev) {
+    if (ev.meta?.isolated) {
+      handleScheduledGrokEvent(ev);
+      return;
+    }
+
+    const chat = document.getElementById('chat');
+    if (!chat) return;
+
+    if (['thought', 'text', 'assistant_chunk', 'tool_use', 'tool_result', 'tool_call'].includes(ev.type)) {
+      markGrokRunning();
+    }
+
+    if (['tool_use', 'tool_result', 'tool_call'].includes(ev.type)) {
+      trackSessionFromTool(ev);
+    }
+
+    if (ev.type === 'thought') {
+      let last = chat.lastElementChild;
+      const chunk = ev.data || ev.text || '';
+      streamBuffers.thought += chunk;
+      if (last && last.querySelector('.thought-content')) {
+        const content = last.querySelector('.thought-content');
+        content.textContent += chunk;
+      } else {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex justify-start';
+        const bubble = document.createElement('div');
+        bubble.className = 'message thought select-text px-3 py-2 rounded-xl text-xs max-w-[82%] thought-streaming';
+        bubble.innerHTML = '<div class="text-[10px] uppercase tracking-wide text-[#6b7280] mb-1">Thinking</div>';
+        const content = document.createElement('div');
+        content.className = 'thought-content select-text whitespace-pre-wrap';
+        content.textContent = chunk;
+        bubble.appendChild(content);
+        wrapper.appendChild(bubble);
+        chat.appendChild(wrapper);
+      }
+      chat.scrollTop = chat.scrollHeight;
+      return;
+    }
+
+    if (ev.type === 'text' || ev.type === 'assistant_chunk') {
+      let last = chat.lastElementChild;
+      const chunk = ev.data || ev.text || '';
+      streamBuffers.assistant += chunk;
+      if (last && last.querySelector('.assistant-content.streaming')) {
+        last.querySelector('.assistant-content').textContent += chunk;
+      } else {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex justify-start';
+        const bubble = document.createElement('div');
+        bubble.className = 'message assistant-msg select-text px-4 py-2.5 rounded-2xl text-sm';
+        const content = document.createElement('div');
+        content.className = 'assistant-content select-text streaming whitespace-pre-wrap';
+        content.textContent = chunk;
+        bubble.appendChild(content);
+        wrapper.appendChild(bubble);
+        chat.appendChild(wrapper);
+      }
+      chat.scrollTop = chat.scrollHeight;
+      return;
+    }
+
+    if (ev.type === 'start') {
+      isGrokRunning = true;
+      isStopping = false;
+      updateRunControls();
+      return;
+    }
+
+    if (ev.type === 'end' || ev.type === 'stopped') {
+      isGrokRunning = false;
+      isSending = false;
+      isStopping = false;
+      updateRunControls();
+      document.querySelectorAll('.streaming').forEach(e => e.classList.remove('streaming'));
+      document.querySelectorAll('.thought-streaming').forEach(e => e.classList.remove('thought-streaming'));
+      if (ev.type === 'stopped') addMessage('system', 'Stopped.');
+      flushStreamBuffers().then(async () => {
+        if (grokCoworkAPI.syncTaskSession) {
+          const synced = await grokCoworkAPI.syncTaskSession();
+          if (synced?.task) activeTask = synced.task;
+        }
+        const r = await grokCoworkAPI.listTasks?.();
+        if (r?.manifest) { taskManifest = r.manifest; }
+        if (r?.activeTask) { activeTask = r.activeTask; }
+        renderTasks();
+        renderTaskSessionPanel();
+        if (queuedMessage) await flushQueuedMessage();
+      });
+      return;
+    }
+
+    if (ev.type === 'error') {
+      addMessage('system', 'Error: ' + (ev.data || ev.message || ''));
+    }
+  }
+
+  async function loadContext() {
+    if (isGrokActive()) return;
+    addMessage('system', 'Loading current workspace context into Grok...');
+    const proj = currentState.projects?.find(p => p.id === currentState.activeProjectId);
+    await grokCoworkAPI.runCoworkPrompt(`Load and remember the full Executive Suite workspace context for ${proj?.name || 'the active project'}. List the working folders, current progress, and any open scheduled tasks.`);
+  }
+
+  async function captureDesktop() {
+    if (grokCoworkAPI.addTaskSessionConnector) {
+      await grokCoworkAPI.addTaskSessionConnector({ connector: 'Desktop Capture' });
+      await refreshTaskSession();
+    }
+    const res = await grokCoworkAPI.captureScreen();
+    if (!res.ok) {
+      addMessage('system', 'Desktop capture failed: ' + (res.error || 'unknown error'));
+      return;
+    }
+    if (res.path && grokCoworkAPI.saveAttachment) {
+      const saved = await grokCoworkAPI.saveAttachment({
+        sourcePath: res.path,
+        mime: res.mime || 'image/png',
+        name: 'desktop-capture.png'
+      });
+      if (saved?.ok) {
+        const previewData = await grokCoworkAPI.getAttachmentPreview(saved.path);
+        const att = {
+          path: saved.path,
+          mime: saved.mime,
+          name: saved.name,
+          previewUrl: previewData?.dataUrl
+        };
+        pendingAttachments.push(att);
+        renderPendingAttachments();
+        renderArtifacts();
+        addMessage('system', 'Desktop captured and attached. Send a message to analyze it.');
+        return;
+      }
+    }
+    addMessage('system', 'Desktop captured. You can ask Grok to analyze it or perform actions on what it sees.');
+  }
+
+  async function desktopAction(action, params) {
+    try {
+      if (grokCoworkAPI.addTaskSessionConnector) {
+        await grokCoworkAPI.addTaskSessionConnector({ connector: 'Desktop Control' });
+        await refreshTaskSession();
+      }
+      const res = await grokCoworkAPI.desktopAction(action, params);
+      const msg = res.ok ? (res.result || action) : ('Desktop error: ' + (res.error || res.result || action));
+      addMessage('system', msg);
+      return res;
+    } catch (e) {
+      addMessage('system', 'Desktop error: ' + (e.message || e));
+      return { ok: false };
+    }
+  }
+
+  function wireAllControls() {
+    const bind = (id, fn) => {
+      const el = document.getElementById(id);
+      if (el) el.onclick = fn;
+    };
+
+    bind('prompt-action-btn', handlePromptAction);
+    bind('load-context-btn', loadContext);
+
+    bind('new-conversation-task-btn', async () => {
+      const n = (taskManifest?.tasks?.length || 0) + 1;
+      await createNewConversationTask(`New task ${n}`);
+    });
+
+    bind('new-project-btn', async () => {
+      if (!grokCoworkAPI.pickFolder) return;
+      const picked = await grokCoworkAPI.pickFolder();
+      if (!picked?.ok || !picked.path) return;
+      await createProjectFromPath(picked.path);
+    });
+
+    bind('add-folder-btn', async () => {
+      if (!grokCoworkAPI.pickFolder) return;
+      const picked = await grokCoworkAPI.pickFolder();
+      if (!picked?.ok || !picked.path) return;
+      await grokCoworkAPI.addWorkingFolder(picked.path);
+      await refreshSidebar();
+      addMessage('system', `Working folder added: ${picked.path}`);
+    });
+
+    bind('new-scheduled-btn', async () => {
+      const name = prompt('New scheduled task name:');
+      if (!name) return;
+      const description = prompt('Description (optional):') || '';
+      const cron = prompt('Cron expression (e.g. 0 9 * * * for daily at 9am):', '0 9 * * *');
+      if (!cron) return;
+      await grokCoworkAPI.addScheduled({
+        id: 'sched-' + Date.now(),
+        name,
+        description,
+        cron,
+        enabled: true,
+        lastRun: null,
+        runs: []
+      });
+      await refreshSidebar();
+      const created = (currentState.scheduledTasks || []).slice(-1)[0];
+      if (created) showScheduledDetailsView(created.id);
+    });
+
+    bind('sched-back-btn', () => showConversationView());
+    bind('sched-run-btn', async () => {
+      if (viewingScheduledId) await runScheduledTaskNow(viewingScheduledId);
+    });
+
+    const banner = document.getElementById('act-banner');
+    if (banner) {
+      banner.onclick = async () => {
+        currentState.actWithoutAsking = !currentState.actWithoutAsking;
+        if (grokCoworkAPI.setActWithoutAsking) {
+          try {
+            await grokCoworkAPI.setActWithoutAsking(currentState.actWithoutAsking);
+          } catch (e) { console.warn('Failed to persist act mode', e); }
+        }
+        updateActBanner();
+      };
+    }
+
+    const taskMenu = document.getElementById('task-context-menu');
+    if (taskMenu) {
+      taskMenu.addEventListener('mousedown', (e) => e.stopPropagation());
+      taskMenu.querySelector('[data-action="rename"]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = taskContextTargetId;
+        hideTaskContextMenu();
+        if (!id) return;
+        const row = document.querySelector('.task-item[data-task-id=\"' + id + '\"] .task-title');
+        startInlineTaskRename(id, row);
+      });
+      taskMenu.querySelector('[data-action="delete"]')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = taskContextTargetId;
+        hideTaskContextMenu();
+        if (!id) return;
+        if (confirm('Delete this task and its chat history?')) {
+          const res = await grokCoworkAPI.deleteConversationTask({ taskId: id });
+          if (res?.manifest) taskManifest = res.manifest;
+          if (res?.activeTask) {
+            activeTask = res.activeTask;
+            await renderHistory(res.history || []);
+          } else {
+            activeTask = null;
+            clearChat();
+          }
+          renderTasks();
+          updateTaskHeader();
+          renderTaskSessionPanel();
+        }
+      });
+    }
+    const schedMenu = document.getElementById('scheduled-context-menu');
+    if (schedMenu) {
+      schedMenu.addEventListener('mousedown', (e) => e.stopPropagation());
+      schedMenu.querySelector('[data-action="rename"]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = scheduledContextTargetId;
+        hideScheduledContextMenu();
+        if (!id) return;
+        const row = document.querySelector('.scheduled-item[data-scheduled-id="' + id + '"] .sched-title');
+        startInlineScheduledRename(id, row);
+      });
+      schedMenu.querySelector('[data-action="run"]')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = scheduledContextTargetId;
+        hideScheduledContextMenu();
+        if (!id) return;
+        await runScheduledTaskNow(id);
+      });
+      schedMenu.querySelector('[data-action="delete"]')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = scheduledContextTargetId;
+        hideScheduledContextMenu();
+        if (!id) return;
+        if (!confirm('Delete this scheduled task and all run history?')) return;
+        const res = await grokCoworkAPI.deleteScheduledTask(id);
+        if (res?.ok) {
+          currentState.scheduledTasks = (currentState.scheduledTasks || []).filter(t => t.id !== id);
+          if (viewingScheduledId === id) showConversationView();
+          renderScheduledTasks();
+        }
+      });
+    }
+
+    document.addEventListener('mousedown', (e) => {
+      const taskMenu = document.getElementById('task-context-menu');
+      const schedMenuEl = document.getElementById('scheduled-context-menu');
+      if (taskMenu?.style.display === 'block' && !taskMenu.contains(e.target)) hideTaskContextMenu();
+      if (schedMenuEl?.style.display === 'block' && !schedMenuEl.contains(e.target)) hideScheduledContextMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hideAllContextMenus();
+    });
+
+  }
+
+  async function boot() {
+    grokCoworkAPI = window.grokCoworkAPI || grokCoworkAPI;
+
+    if (grokCoworkAPI.getBootContext) {
+      await applyBootContext(await grokCoworkAPI.getBootContext());
+    } else {
+      await refresh();
+    }
+
+    wireAllControls();
+    attachPromptKeyboard();
+    wireDragAndDrop();
+    updateRunControls();
+
+    if (grokCoworkAPI.onGrokEvent) {
+      grokCoworkAPI.onGrokEvent(handleGrokEvent);
+    }
+    if (grokCoworkAPI.onTaskSessionUpdated) {
+      grokCoworkAPI.onTaskSessionUpdated((data) => {
+        if (data?.task && activeTask?.id === data.task.id) {
+          activeTask = data.task;
+          renderTaskSessionPanel();
+          updateTaskHeader();
+        }
+      });
+    }
+    if (grokCoworkAPI.onTriggerCapture) {
+      grokCoworkAPI.onTriggerCapture(captureDesktop);
+    }
+    if (grokCoworkAPI.onCreateProjectFromUI) {
+      grokCoworkAPI.onCreateProjectFromUI(createProjectFromPath);
+    }
+    if (grokCoworkAPI.onScheduledRunUpdated) {
+      grokCoworkAPI.onScheduledRunUpdated((data) => {
+        if (!data?.taskId) return;
+        const idx = (currentState.scheduledTasks || []).findIndex(t => t.id === data.taskId);
+        if (idx >= 0 && data.run) {
+          const task = currentState.scheduledTasks[idx];
+          task.runs = task.runs || [];
+          const rIdx = task.runs.findIndex(r => r.id === data.run.id);
+          if (rIdx >= 0) task.runs[rIdx] = data.run;
+          else task.runs.unshift(data.run);
+        }
+        renderScheduledTasks();
+        if (viewingScheduledId === data.taskId) {
+          const task = getScheduledTask(data.taskId);
+          if (task) {
+            if (!selectedScheduledRunId) selectedScheduledRunId = data.run?.id;
+            renderScheduledRunsList(task);
+            if (selectedScheduledRunId) renderScheduledRunOutput(task, selectedScheduledRunId);
+          }
+        }
+      });
+    }
+    if (grokCoworkAPI.onScheduledRunStarted) {
+      grokCoworkAPI.onScheduledRunStarted((data) => {
+        if (!data?.taskId) return;
+        renderScheduledTasks();
+        if (viewingScheduledId === data.taskId) {
+          selectedScheduledRunId = data.runId;
+          const task = getScheduledTask(data.taskId);
+          if (task) {
+            renderScheduledRunsList(task);
+            renderScheduledRunOutput(task, data.runId);
+          }
+        }
+      });
+    }
+
+    window.GC = {
+      refresh,
+      refreshSidebar,
+      createNewConversationTask,
+      state: () => currentState,
+      api: () => grokCoworkAPI,
+      desktopAction
+    };
+
+    console.log('[Grok Executive Suite] Boot complete. runCoworkPrompt available?', typeof grokCoworkAPI.runCoworkPrompt);
+  }
+
+  window.addEventListener('load', boot);
+  })();
+</script>
+</html>

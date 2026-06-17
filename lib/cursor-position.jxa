@@ -1,0 +1,19 @@
+#!/usr/bin/osascript -l JavaScript
+ObjC.import('AppKit');
+
+function run() {
+  const loc = $.NSEvent.mouseLocation;
+  const screens = $.NSScreen.screens;
+  let screenHeight = 0;
+  if (screens.count > 0) {
+    screenHeight = screens.objectAtIndex(0).frame.size.height;
+  }
+  const result = {
+    x: Math.round(loc.x),
+    y: Math.round(screenHeight - loc.y),
+    screenHeight: Math.round(screenHeight)
+  };
+  return JSON.stringify(result);
+}
+
+run();

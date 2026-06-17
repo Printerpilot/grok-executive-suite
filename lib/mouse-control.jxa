@@ -1,0 +1,66 @@
+#!/usr/bin/osascript -l JavaScript
+ObjC.import('CoreGraphics');
+ObjC.import('Foundation');
+
+function run(argv) {
+  const action = argv[0];
+  const x = Number(argv[1] || 0);
+  const y = Number(argv[2] || 0);
+  const button = argv[3] || 'left';
+  const clickCount = Number(argv[4] || 1);
+
+  const pt = $.CGPointMake(x, y);
+
+  function post(eventType, mouseButton) {
+    const ev = $.CGEventCreateMouseEvent(null, eventType, pt, mouseButton);
+    if (!ev) throw new Error('Failed to create mouse event');
+    $.CGEventPost($.kCGHIDEventTap, ev);
+  }
+
+  function sleepMs(ms) {
+    $.NSThread.sleepForTimeInterval(ms / 1000.0);
+  }
+
+  if (action === 'move') {
+    post($.kCGEventMouseMoved, $.kCGMouseButtonLeft);
+    return 'ok';
+  }
+
+  if (action === 'click') {
+    const isRight = button === 'right';
+    const mouseBtn = isRight ? $.kCGMouseButtonRight : $.kCGMouseButtonLeft;
+    const downType = isRight ? $.kCGEventRightMouseDown : $.kCGEventLeftMouseDown;
+    const upType = isRight ? $.kCGEventRightMouseUp : $.kCGEventLeftMouseUp;
+
+    post($.kCGEventMouseMoved, $.kCGMouseButtonLeft);
+    sleepMs(20);
+
+    const count = Math.max(1, clickCount);
+    for (let i = 0; i < count; i++) {
+      post(downType, mouseBtn);
+      sleepMs(30);
+      post(upType, mouseBtn);
+      if (i < count - 1) sleepMs(80);
+    }
+    return 'ok';
+  }
+
+  throw new Error('Unknown mouse action: ' + action);
+}
+
+(function () {
+  const nsArgs = $.NSProcessInfo.processInfo.arguments;
+  const argv = [];
+  let start = 0;
+  for (let i = 0; i < nsArgs.count; i++) {
+    const val = ObjC.unwrap(nsArgs.objectAtIndex(i));
+    if (String(val).indexOf('mouse-control.jxa') !== -1) {
+      start = i + 1;
+      break;
+    }
+  }
+  for (let i = start; i < nsArgs.count; i++) {
+    argv.push(ObjC.unwrap(nsArgs.objectAtIndex(i)));
+  }
+  run(argv);
+})();

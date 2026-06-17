@@ -1,0 +1,55 @@
+{
+  "name": "grok-executive-suite",
+  "version": "0.3.2",
+  "description": "Grok Executive Suite — Native macOS desktop app for executive-level AI delegation. Full agentic Grok with scheduled tasks and project context.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac --arm64",
+    "verify": "bash scripts/verify-setup.sh",
+    "test:desktop": "node scripts/test-desktop-control.js"
+  },
+  "keywords": [
+    "grok",
+    "xai",
+    "grok-build",
+    "executive-suite",
+    "desktop",
+    "agent",
+    "macos",
+    "electron"
+  ],
+  "author": "Troy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/grok-executive-suite.git"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/grok-executive-suite#readme",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/grok-executive-suite/issues"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "ws": "^8.17.0"
+  },
+  "build": {
+    "appId": "com.grok.executive-suite",
+    "productName": "Grok Executive Suite",
+    "mac": {
+      "identity": null,
+      "category": "public.app-category.developer-tools",
+      "target": "dmg"
+    },
+    "files": [
+      "**/*",
+      "!**/{.DS_Store,.git,.gitignore}",
+      "!dist/**",
+      "!node_modules/.cache/**"
+    ]
+  }
+}
