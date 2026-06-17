@@ -1,8 +1,16 @@
 # Grok Executive Suite
 
-A native **macOS desktop GUI** for [Grok Build](https://x.ai/news/grok-build-cli) — delegate outcomes, not terminal commands.
+[![Release](https://img.shields.io/github/v/release/Printerpilot/grok-executive-suite?label=release&sort=semver)](https://github.com/Printerpilot/grok-executive-suite/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple)](https://github.com/Printerpilot/grok-executive-suite/releases/latest)
+[![Grok Build](https://img.shields.io/badge/Requires-Grok%20Build-ff9500)](https://x.ai/news/grok-build-cli)
+[![Community](https://img.shields.io/badge/Community-not%20official%20xAI-8e8e93)](DISCLAIMER.md)
+
+**Delegate outcomes, not terminal commands.** A native macOS GUI for [Grok Build](https://x.ai/news/grok-build-cli) — projects, tasks, scheduled jobs, and full agentic delegation in one desktop workspace.
 
 > **Community project.** Not affiliated with xAI. See [DISCLAIMER.md](DISCLAIMER.md).
+
+**Download:** [Latest release (DMG)](https://github.com/Printerpilot/grok-executive-suite/releases/latest) · **Docs:** [Install guide](#install-end-users) · **Verify:** [`verify-setup.sh`](scripts/verify-setup.sh)
 
 ## The idea
 
