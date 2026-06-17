@@ -23,11 +23,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/grok-executive-suite.git"
+    "url": "https://github.com/Printerpilot/grok-executive-suite.git"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/grok-executive-suite#readme",
+  "homepage": "https://github.com/Printerpilot/grok-executive-suite#readme",
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/grok-executive-suite/issues"
+    "url": "https://github.com/Printerpilot/grok-executive-suite/issues"
   },
   "devDependencies": {
     "electron": "^31.0.0",

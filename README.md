@@ -35,7 +35,7 @@ Grok Executive Suite wraps Grok Build's full agentic power — projects, resumab
 Verify your system before installing:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/grok-executive-suite/main/scripts/verify-setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Printerpilot/grok-executive-suite/main/scripts/verify-setup.sh | bash
 ```
 
 Or clone the repo and run:
@@ -62,7 +62,7 @@ Sign in with your xAI account when prompted.
 
 ### 2. Download Grok Executive Suite
 
-1. Go to [GitHub Releases](https://github.com/YOUR_USERNAME/grok-executive-suite/releases)
+1. Go to [GitHub Releases](https://github.com/Printerpilot/grok-executive-suite/releases)
 2. Download **`Grok Executive Suite-0.3.2-arm64.dmg`**
 3. Open the DMG and drag **Grok Executive Suite.app** to **Applications**
 
@@ -102,7 +102,7 @@ Your projects, tasks, and chat history survive app restarts.
 ## Build from source (developers)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/grok-executive-suite.git
+git clone https://github.com/Printerpilot/grok-executive-suite.git
 cd grok-executive-suite
 npm install
 npm run verify    # checks Grok CLI + Apple Silicon
